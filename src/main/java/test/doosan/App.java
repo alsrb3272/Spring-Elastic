@@ -15,14 +15,14 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.springframework.boot.SpringApplication;
 
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 public class App {
-    public static void main( String[] args )
-    {
-        SpringApplication.run(App.class, args);
+    public static void main(String[] args) {
+//        SpringApplication.run(App.class, args);
         //ip port
         RestClientBuilder builder = RestClient.builder(new HttpHost("180.71.93.106", 9200))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
@@ -35,61 +35,39 @@ public class App {
         RestClient restClient = builder.build();
 
 
-
-    Request request = new Request("POST", "/kdrama/_search/template");
+        Request request = new Request("POST", "/kdrama/_search/template");
 
         //request body
         /*
-        {
-            "id": "sample_0001",
-            "params": {
-              "keyword": "애터미"
-            }
-          }
-        */
-//        Gson Agson = new Gson();
         String jsonString = """
-                    {
-                      "id": "kdrama_0001",
-                      "params": {
-                        "keyword": "Justice",
-                        "field1": "name",
-                        "field2": "synopsis"
-                      }
-                    }
-                    """;
+            {
+              "id": "kdrama_0001",
+              "params": {
+                "keyword": "Justice",
+                "field1": "name",
+                "field2": "synopsis"
+              }
+            }
+        """;*/
 
+        ObjectMapper objectMapper1 = new ObjectMapper();
 
-/*
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", "kdrama_0001");
+        // JSON 구조에 맞는 Map 생성
+        Map<String, Object> jsonMap = new HashMap<>();
+        Map<String, String> paramsMap = new HashMap<>();
+        paramsMap.put("keyword", "Justice");
+        paramsMap.put("field1", "name");
+        paramsMap.put("field2", "synopsis");
+        // paramsMap.put("size", "25,50,100"); # 사이트에서 보고 싶은 항목의 개수를 선택 25,50,100 픽
+        jsonMap.put("id", "kdrama_0001");
+        jsonMap.put("params", paramsMap);
 
-        Map<String, Object> term_1 = new HashMap<>();
-        term_1.put("keyword" , "Justice" );
+        try {
+            // Map을 JSON 문자열로 변환
+            String jsonString = objectMapper1.writeValueAsString(jsonMap);
 
-        Map<String, Object> term_2 = new HashMap<>();
-        term_2.put( "field1" , "name" );
-
-        Map<String, Object> term_3 = new HashMap<>();
-        term_3.put( "field2" , "synopsis" );
-
-        // params 맵 생성
-        Map<String, Object> params = new HashMap<>();
-        params.putAll(term_1);
-        params.putAll(term_2);
-        params.putAll(term_3);
-
-        //두개 map 합치기
-        map.putAll(params);
-
-        //json string으로 변환
-        String mapString = Agson.toJson(map);
-*/
-
-        //requeyst body 에 작성한 mapping 싣기
-        request.setJsonEntity(jsonString);
-
-        try{
+            // Request 객체에 JSON 본문 설정
+            request.setJsonEntity(jsonString);
 
             Response response = restClient.performRequest(request);
 
@@ -131,29 +109,42 @@ public class App {
             */
 
             //반복되어야 하는 부분
-            for (int i = 0; i <hitsNum; i++) {
+            for (int i = 0; i < hitsNum; i++) {
 
-                JsonNode childHit = childHits.get(i);//배열
+                JsonNode childHit = childHits.get(i); // 배열
                 JsonNode _source = childHit.get("_source");
 
                 JsonNode name = _source.get("name");
                 System.out.println("name = " + name.asText());
                 JsonNode synopsis = _source.get("synopsis");
-                System.out.println("synopsis = " + synopsis.asText());
-
-
-                JsonNode highlight = childHit.get("highlight");
-                JsonNode test = highlight.get("synopsis");
-                for (JsonNode jsonNode2 : test) {
-                    System.out.println("synopsis = " + jsonNode2.asText());
+                if (synopsis != null) { // synopsis가 null이 아닌 경우에만 출력
+                    System.out.println("synopsis = " + synopsis.asText());
                 }
 
+                JsonNode highlight = childHit.get("highlight");
+                if (highlight != null) {
+                    JsonNode synopsisHighlights = highlight.get("synopsis");
+
+                    // 하이라이트된 'synopsis' 필드의 모든 요소를 결합
+                    if (synopsisHighlights != null) {
+                        StringBuilder synopsisBuilder = new StringBuilder();
+                        for (JsonNode snippet : synopsisHighlights) {
+                            synopsisBuilder.append(snippet.asText()).append(" ");
+                        }
+                        // 결합된 하이라이트를 출력
+                        String combinedSynopsis = synopsisBuilder.toString().trim();
+                        System.out.println("Combined synopsis highlight: " + combinedSynopsis);
+
+                    }
+                }
             }
-
-
+            System.out.println("작업 완료. 프로그램을 종료합니다.");
+            System.exit(0);
         } catch (Exception e) {
             //TODO: handle exception
-            System.out.println( "error : "+ e.getMessage() );
+            System.out.println("error : " + e.getMessage());
+            System.exit(1);
+
         }
     }
 
@@ -162,7 +153,7 @@ public class App {
         System.out.flush();
     }
 
-    public static  String prettyPrinting(String str){
+    public static String prettyPrinting(String str) {
 
         String result = "";
 
