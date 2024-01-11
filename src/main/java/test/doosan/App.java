@@ -15,20 +15,36 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-public class App {
+@SpringBootApplication
+public class App  {
+
     public static void main(String[] args) {
-//        SpringApplication.run(App.class, args);
-        //ip port
-        RestClientBuilder builder = RestClient.builder(new HttpHost("180.71.93.106", 9200))
+
+        // Start the Spring application context
+        ConfigurableApplicationContext context = SpringApplication.run(App.class, args);
+
+        // Obtain the PropertyConfig bean from the application context
+        PropertyConfig propertyConfig = context.getBean(PropertyConfig.class);
+
+
+        String hostname = propertyConfig.getHostname();
+        int port = propertyConfig.getPort();
+        String username = propertyConfig.getUsername();
+        String password = propertyConfig.getPassword();
+
+        RestClientBuilder builder = RestClient.builder(new HttpHost(hostname, port))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
                     BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                     credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials("elastic", "123456"));
+                            new UsernamePasswordCredentials(username, password));
                     return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                 });
 
@@ -138,12 +154,9 @@ public class App {
                     }
                 }
             }
-            System.out.println("작업 완료. 프로그램을 종료합니다.");
-            System.exit(0);
         } catch (Exception e) {
             //TODO: handle exception
             System.out.println("error : " + e.getMessage());
-            System.exit(1);
 
         }
     }

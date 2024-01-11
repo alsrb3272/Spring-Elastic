@@ -21,6 +21,7 @@ dependencies {
 	implementation 'top.jfunc.json:Json-Gson:1.0'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	implementation 'org.elasticsearch.client:elasticsearch-rest-client:8.11.3'
+	implementation 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {

@@ -13,6 +13,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,14 +25,25 @@ import java.util.stream.Stream;
 public class DoosanApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DoosanApplication.class, args);
+        // Start the Spring application context
+        ConfigurableApplicationContext context = SpringApplication.run(App.class, args);
+
+        // Obtain the PropertyConfig bean from the application context
+        PropertyConfig propertyConfig = context.getBean(PropertyConfig.class);
+
+
+        String hostname = propertyConfig.getHostname();
+        int port = propertyConfig.getPort();
+        String username = propertyConfig.getUsername();
+        String password = propertyConfig.getPassword();
+        String scheme = propertyConfig.getScheme();
 
         RestClientBuilder builder = RestClient.builder(
-                        new HttpHost("72b0867a91f4485c99b0e49fbaeafbb0.us-central1.gcp.cloud.es.io", 443, "https"))
+                        new HttpHost( hostname, port))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
                     BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                     credentialsProvider.setCredentials(AuthScope.ANY,
-                            new UsernamePasswordCredentials("elastic", "123456")); // 여기에 실제 자격증명을 사용하세요.
+                            new UsernamePasswordCredentials(username, password)); // 여기에 실제 자격증명을 사용하세요.
                     return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
                 });
 
