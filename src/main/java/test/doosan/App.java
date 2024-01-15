@@ -20,7 +20,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @SpringBootApplication
@@ -39,6 +41,7 @@ public class App  {
         int port = propertyConfig.getPort();
         String username = propertyConfig.getUsername();
         String password = propertyConfig.getPassword();
+        String https = propertyConfig.getScheme();
 
         RestClientBuilder builder = RestClient.builder(new HttpHost(hostname, port))
                 .setHttpClientConfigCallback(httpClientBuilder -> {
@@ -69,14 +72,41 @@ public class App  {
         ObjectMapper objectMapper1 = new ObjectMapper();
 
         // JSON 구조에 맞는 Map 생성
+        // JSON 구조에 맞는 Map 생성
         Map<String, Object> jsonMap = new HashMap<>();
-        Map<String, String> paramsMap = new HashMap<>();
-        paramsMap.put("keyword", "Justice");
-        paramsMap.put("field1", "name");
-        paramsMap.put("field2", "synopsis");
-        // paramsMap.put("size", "25,50,100"); # 사이트에서 보고 싶은 항목의 개수를 선택 25,50,100 픽
+        Map<String, Object> paramsMap = new HashMap<>();
+        Map<String, Object> sortMap = new HashMap<>();
+        Map<String, Object> filterMap = new HashMap<>();
+        Map<String, Object> boolMap = new HashMap<>();
+        List<Map<String, Object>> shouldList = new ArrayList<>();
+
+// "sort" 객체 생성
+        sortMap.put("ranking", "asc");
+
+// "filter1" 객체 및 "bool" -> "should" 배열 생성
+        Map<String, Object> matchMap = new HashMap<>();
+        matchMap.put("Genre", "Mystery");
+        Map<String, Object> shouldMatchMap = new HashMap<>();
+        shouldMatchMap.put("match", matchMap);
+        shouldList.add(shouldMatchMap);
+
+// "bool" 객체에 "should" 배열 넣기
+        boolMap.put("should", shouldList);
+
+// "filter1"에 "bool" 객체 넣기
+        filterMap.put("bool", boolMap);
+
+// "params" 객체에 다른 속성들과 함께 "sort" 및 "filter1" 넣기
+        paramsMap.put("sort", sortMap);
+        paramsMap.put("keyword", "test");
+        paramsMap.put("field1", "Name");
+        paramsMap.put("field2", "Synopsis");
+        paramsMap.put("filter1", filterMap);
+
+// 최상위 객체에 "id" 및 "params" 넣기
         jsonMap.put("id", "kdrama_0001");
         jsonMap.put("params", paramsMap);
+
 
         try {
             // Map을 JSON 문자열로 변환
@@ -130,16 +160,16 @@ public class App  {
                 JsonNode childHit = childHits.get(i); // 배열
                 JsonNode _source = childHit.get("_source");
 
-                JsonNode name = _source.get("name");
-                System.out.println("name = " + name.asText());
-                JsonNode synopsis = _source.get("synopsis");
+                JsonNode name = _source.get("Name");
+                System.out.println("Name = " + name.asText());
+                JsonNode synopsis = _source.get("Synopsis");
                 if (synopsis != null) { // synopsis가 null이 아닌 경우에만 출력
-                    System.out.println("synopsis = " + synopsis.asText());
+                    System.out.println("Synopsis = " + synopsis.asText());
                 }
 
                 JsonNode highlight = childHit.get("highlight");
                 if (highlight != null) {
-                    JsonNode synopsisHighlights = highlight.get("synopsis");
+                    JsonNode synopsisHighlights = highlight.get("Synopsis");
 
                     // 하이라이트된 'synopsis' 필드의 모든 요소를 결합
                     if (synopsisHighlights != null) {
